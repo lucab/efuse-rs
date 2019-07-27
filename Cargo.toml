@@ -1,0 +1,26 @@
+[package]
+name = "efuse"
+version = "0.1.0-alpha.0"
+authors = ["Luca Bruno <luca.bruno@coreos.com>"]
+edition = "2018"
+repository = "https://github.com/lucab/efuse-rs"
+license = "MIT/Apache-2.0"
+documentation = "https://docs.rs/efuse"
+description = "Software fuses"
+keywords = ["fuse", "antifuse"]
+exclude = [
+".gitignore",
+".travis.yml",
+]
+
+[dependencies]
+
+[package.metadata.release]
+sign-commit = true
+upload-doc = false
+disable-push = true
+disable-publish = true
+pre-release-commit-message = "cargo: efuse release {{version}}"
+pro-release-commit-message = "cargo: development version bump"
+tag-message = "efuse v{{version}}"
+tag-prefix = "v"
