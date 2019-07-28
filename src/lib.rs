@@ -61,20 +61,23 @@ impl Fuse {
     }
 
     /// Zap this fuse (unconditionally), toggling its value permanently.
-    pub fn zap(&mut self) {
+    ///
+    /// It returns the new value of this fuse.
+    pub fn zap(&mut self) -> bool {
         self.zapped |= true;
+        self.initial_state ^ true
     }
 
     /// Zap this fuse (conditionally), toggling its value permanently.
     ///
     /// If the fuse was already previously zapped, it returns an
     /// [`AlreadyZappedError`](struct.AlreadyZappedError.html) error.
-    pub fn zap_once(&mut self) -> Result<(), AlreadyZappedError> {
+    /// Otherwise, it returns the new value of this fuse.
+    pub fn zap_once(&mut self) -> Result<bool, AlreadyZappedError> {
         if self.zapped {
             return Err(AlreadyZappedError);
         }
-        self.zap();
-        Ok(())
+        Ok(self.zap())
     }
 
     /// Whether this fuse has already been zapped.
@@ -125,19 +128,23 @@ impl AtomicFuse {
     }
 
     /// Zap this fuse (unconditionally), toggling its value permanently.
-    pub fn zap(&self) {
+    ///
+    /// It returns the new value of this fuse.
+    pub fn zap(&self) -> bool {
         self.zapped.fetch_or(true, SeqCst);
+        self.initial_state ^ true
     }
 
     /// Zap this fuse (conditionally), toggling its value permanently.
     ///
     /// If the fuse was already previously zapped, it returns an
     /// [`AlreadyZappedError`](struct.AlreadyZappedError.html) error.
-    pub fn zap_once(&self) -> Result<(), AlreadyZappedError> {
+    /// Otherwise, it returns the new value of this fuse.
+    pub fn zap_once(&self) -> Result<bool, AlreadyZappedError> {
         if self.zapped.compare_and_swap(false, true, SeqCst) {
             return Err(AlreadyZappedError);
         }
-        Ok(())
+        Ok(self.initial_state ^ true)
     }
 
     /// Whether this fuse has already been zapped.
@@ -184,23 +191,27 @@ mod tests {
             {
                 let mut fuse = Fuse::new(init);
                 assert_eq!(fuse.as_bool(), init);
-                fuse.zap_once().unwrap();
+                let new1 = fuse.zap_once().unwrap();
+                assert_eq!(new1, !init);
                 assert_eq!(fuse.as_bool(), !init);
                 fuse.zap_once().unwrap_err();
                 assert_eq!(fuse.as_bool(), !init);
-                fuse.zap();
+                let new2 = fuse.zap();
                 assert_eq!(fuse.as_bool(), !init);
+                assert_eq!(new2, !init);
             }
 
             {
                 let afuse = AtomicFuse::new(init);
                 assert_eq!(afuse.as_bool(), init);
-                afuse.zap_once().unwrap();
+                let new1 = afuse.zap_once().unwrap();
+                assert_eq!(new1, !init);
                 assert_eq!(afuse.as_bool(), !init);
                 afuse.zap_once().unwrap_err();
                 assert_eq!(afuse.as_bool(), !init);
-                afuse.zap();
+                let new2 = afuse.zap();
                 assert_eq!(afuse.as_bool(), !init);
+                assert_eq!(new2, !init);
             }
         }
     }
